@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ExcelFile {
+  id           String   @id @default(cuid())
+  name         String
+  originalName String
+  path         String
+  size         Int      @default(0)
+  sheetCount   Int      @default(0)
+  isActive     Boolean  @default(false)
+  description  String   @default("")
+  macros       Macro[]
+  operations   Operation[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Macro {
+  id        String    @id @default(cuid())
+  name      String
+  code      String
+  language  String    @default("vba") // "vba" or "python"
+  file      ExcelFile? @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId    String?
+  isGlobal  Boolean   @default(false)
+  runs      MacroRun[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model MacroRun {
+  id        String   @id @default(cuid())
+  macroId   String
+  macro     Macro    @relation(fields: [macroId], references: [id], onDelete: Cascade)
+  status    String   @default("pending") // "pending", "success", "error"
+  output    String?
+  duration  Int?
+  createdAt DateTime @default(now())
+}
+
+model Operation {
+  id        String    @id @default(cuid())
+  type      String    // "sort", "filter", "merge", "find_replace", "pivot", etc.
+  params    String    // JSON string of parameters
+  status    String    @default("completed") // "pending", "completed", "error"
+  file      ExcelFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId    String
+  createdAt DateTime  @default(now())
+}
+
+model MainDatabase {
+  id           String   @id @default(cuid())
+  name         String   @default("Основная БД")
+  originalName String
+  filePath     String
+  totalRows    Int      @default(0)
+  totalCols    Int      @default(0)
+  sheetName    String   @default("Лист1")
+  fileSize     Int      @default(0)
+  keyColumns   String   @default("0,1,2,3,4,5,6,8,10,11,12,13")
+  isActive     Boolean  @default(true)
+  loadedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
