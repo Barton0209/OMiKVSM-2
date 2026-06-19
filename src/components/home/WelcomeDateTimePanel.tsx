@@ -1,9 +1,7 @@
 'use client'
-
 import { useEffect, useMemo, useState } from 'react'
 
 const WEEKDAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
-
 const MONTH_NAMES = [
   'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
   'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек',
@@ -33,41 +31,65 @@ function buildMonthCells(view: Date, today: Date) {
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const cells: Array<{ day: number; isToday: boolean } | null> = []
-
+  
   for (let i = 0; i < firstWeekday; i++) cells.push(null)
   for (let day = 1; day <= daysInMonth; day++) {
     const isToday =
-      today.getFullYear() === year
-      && today.getMonth() === month
-      && today.getDate() === day
+      today.getFullYear() === year &&
+      today.getMonth() === month &&
+      today.getDate() === day
     cells.push({ day, isToday })
   }
   return cells
 }
 
 export default function WelcomeDateTimePanel({ className = '' }: { className?: string }) {
-  const [now, setNow] = useState(() => new Date())
+  // 1. Сначала объявляем все состояния
+  const [now, setNow] = useState<Date | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
+  // 2. Затем эффекты
   useEffect(() => {
+    setNow(new Date())
+    setIsMounted(true)
+    
     const id = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(id)
   }, [])
 
-  const monthCells = useMemo(() => buildMonthCells(now, now), [now])
-  const monthTitle = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
+  // 3. Затем useMemo и другие вычисления (они должны быть всегда!)
+  // Если now еще null (при первой отрисовке), используем заглушку, чтобы useMemo не упал
+  const safeNow = now || new Date()
+  
+  const monthCells = useMemo(() => buildMonthCells(safeNow, safeNow), [safeNow])
+  const monthTitle = `${MONTH_NAMES[safeNow.getMonth()]} ${safeNow.getFullYear()}`
+  const dateStr = formatDateCompact(safeNow)
+  const timeStr = formatTime(safeNow)
+
+  // 4. Только теперь возвращаем JSX
+  // Если компонент еще не смонтирован, показываем статичную заглушку
+  if (!isMounted) {
+    return (
+      <div className={`flex items-stretch gap-2 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5 shrink-0 ${className}`}>
+        <div className="flex flex-col justify-center min-w-[108px] max-w-[130px] pl-1 pr-2 border-r border-gray-100">
+          <p className="text-[10px] text-gray-600 leading-tight">Загрузка...</p>
+          <p className="text-lg font-semibold tabular-nums text-gray-900 leading-none mt-1">--:--:--</p>
+        </div>
+        <div className="w-[148px] shrink-0" />
+      </div>
+    )
+  }
 
   return (
-    <div
-      className={`flex items-stretch gap-2 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5 shrink-0 ${className}`}
-    >
+    <div className={`flex items-stretch gap-2 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5 shrink-0 ${className}`}>
       {/* Дата и время — слева от календаря */}
       <div className="flex flex-col justify-center min-w-[108px] max-w-[130px] pl-1 pr-2 border-r border-gray-100">
-        <p className="text-[10px] text-gray-600 leading-tight">{formatDateCompact(now)}</p>
+        <p className="text-[10px] text-gray-600 leading-tight">{dateStr}</p>
         <p className="text-lg font-semibold tabular-nums text-gray-900 leading-none mt-1">
-          {formatTime(now)}
+          {timeStr}
         </p>
       </div>
-
+      
       {/* Мини-календарь */}
       <div className="w-[148px] shrink-0">
         <p className="text-[9px] font-semibold text-gray-700 text-center mb-0.5">{monthTitle}</p>

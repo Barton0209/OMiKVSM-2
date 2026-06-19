@@ -1005,6 +1005,80 @@ async def main_db_clear():
 
 
 # =============================================================================
+# Main Database Instance Operations
+# =============================================================================
+
+class MainDbActivateRequest(BaseModel):
+    instance_id: str
+
+
+@app.get("/api/main-db/instances")
+async def main_db_instances():
+    """List all main database instances."""
+    try:
+        result = await run_blocking(main_db.list_instances)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/main-db/instances/activate")
+async def main_db_instances_activate(request: MainDbActivateRequest):
+    """Activate a main database instance by ID."""
+    try:
+        result = await run_blocking(main_db.activate_instance, request.instance_id)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/main-db/instances/{instance_id}")
+async def main_db_instances_delete(instance_id: str):
+    """Delete a main database instance by ID."""
+    try:
+        result = await run_blocking(main_db.delete_instance, instance_id)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/main-db/instances/{instance_id}/verify")
+async def main_db_instances_verify(instance_id: str):
+    """Verify a main database instance by ID."""
+    try:
+        result = await run_blocking(main_db.verify_instance, instance_id)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/main-db/instances/{instance_id}/export")
+async def main_db_instances_export(instance_id: str):
+    """Export a main database instance to Excel."""
+    try:
+        result = await run_blocking(main_db.export_instance_to_excel, instance_id)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
 # Calendar Database Operations
 # =============================================================================
 
